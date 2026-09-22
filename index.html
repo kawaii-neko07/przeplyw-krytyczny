@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Przepływ krytyczny — gra o komunikacji i automatyzacji</title>
+<style>
+:root{--bg:#f2eee7;--paper:#fffdf8;--ink:#202420;--muted:#68706b;--line:#d9d4ca;--sage:#637a6d;--sage2:#e4ebe5;--plum:#72596e;--amber:#a76f37;--rose:#9c5652;--soft:#ece8df;--shadow:0 14px 38px rgba(45,42,35,.055)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.app{max-width:1400px;margin:auto;padding:34px 38px}button{font:inherit;color:inherit}button:focus-visible{outline:3px solid #8ea497;outline-offset:3px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,290px);gap:38px;align-items:end;padding:8px 0 27px;border-bottom:1px solid var(--line)}h1{font:500 clamp(48px,6vw,84px)/.93 Georgia,serif;letter-spacing:-.055em;margin:0 0 15px}.hero p{max-width:720px;margin:0;color:var(--muted);font-size:15px;line-height:1.65}.brief{background:#252b28;color:#faf7ef;border-radius:20px;padding:18px 20px}.brief b{display:block;font:500 22px Georgia,serif;margin-bottom:5px}.brief span{font-size:11px;line-height:1.5;opacity:.72;display:block}
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(125px,1fr));gap:9px;margin:18px 0}.metric{background:rgba(255,253,248,.78);border:1px solid var(--line);border-radius:14px;padding:13px;min-width:0}.metric b{display:block;font:500 24px Georgia,serif}.metric span{display:block;color:var(--muted);font-size:10px;line-height:1.35;margin-top:4px;overflow-wrap:break-word}.bar{height:4px;background:#e2ded5;border-radius:8px;margin-top:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--sage);transition:width .35s}
+.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(330px,.72fr);gap:16px;align-items:start}.panel{background:var(--paper);border:1px solid var(--line);border-radius:21px;box-shadow:var(--shadow);min-width:0}.main{padding:25px}.head{display:flex;justify-content:space-between;gap:24px;align-items:start;margin-bottom:20px}.head h2,.side h2{font:500 27px/1.1 Georgia,serif;letter-spacing:-.025em;margin:0 0 7px}.head p{font-size:12px;line-height:1.55;color:var(--muted);max-width:650px;margin:0}.progress{font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--plum);white-space:nowrap}
+.scene{position:relative;overflow:hidden;background:#f0ede5;border-radius:17px;padding:20px 21px;margin-bottom:18px}.scene:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--plum)}.time{font-size:10px;letter-spacing:.11em;font-weight:800;color:var(--plum)}.scene h3{font:500 23px/1.2 Georgia,serif;margin:7px 0 8px}.scene p{font-size:13px;line-height:1.62;color:#555c58;margin:0;max-width:820px}
+.echo{display:none;margin:-7px 0 18px;padding:12px 14px;border:1px solid #d9d2c3;border-radius:12px;background:#fffaf0;font-size:11px;line-height:1.5;color:#625b50}.echo.show{display:block}.echo b{color:var(--amber)}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.choice{text-align:left;border:1px solid var(--line);background:white;border-radius:15px;padding:15px;cursor:pointer;min-width:0;transition:.15s}.choice:hover{border-color:#98a59d;transform:translateY(-1px)}.choice:disabled{cursor:default;opacity:.5;transform:none}.choice.selected{opacity:1;border-color:var(--sage);background:#f0f5f1}.letter{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--soft);font-size:10px;font-weight:800;margin-bottom:8px}.choice b,.choice span{display:block;overflow-wrap:break-word}.choice b{font-size:13px;line-height:1.35;margin-bottom:5px}.choice span{font-size:11px;line-height:1.48;color:var(--muted)}
+.consequence{display:none;margin-top:16px;border-top:1px solid var(--line);padding-top:16px}.consequence.show{display:block}.consequence small{font-size:9px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--amber)}.consequence p{font-size:13px;line-height:1.6;color:#515854;margin:6px 0 0}.nextrow{display:flex;justify-content:flex-end;margin-top:18px}.primary,.restart{border:0;border-radius:999px;background:#252b28;color:white;padding:11px 18px;font-weight:750;cursor:pointer}.primary:disabled{opacity:.3;cursor:not-allowed}
+.side{padding:21px}.side+.side{margin-top:16px}.side>p{font-size:11px;line-height:1.5;color:var(--muted);margin:0}.flow{display:grid;gap:7px;margin-top:14px}.flowstep{display:grid;grid-template-columns:27px minmax(0,1fr);gap:9px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:white;transition:.2s}.flowstep.changed{background:#eef4ef;border-color:#bdcbbf}.node{width:27px;height:27px;border-radius:8px;background:var(--sage2);display:grid;place-items:center;font-size:10px;font-weight:800}.flowstep b{font-size:11px;line-height:1.3;overflow-wrap:break-word}
+.log{display:grid;gap:7px;margin-top:12px}.logitem{padding:9px 10px;background:#faf8f2;border-left:3px solid var(--line);border-radius:0 9px 9px 0;font-size:10px;line-height:1.5;color:#59605c}.logitem.good{border-color:var(--sage)}.logitem.warn{border-color:var(--amber)}.logitem.bad{border-color:var(--rose)}.logitem b{color:var(--ink)}
+
+.toast{position:fixed;right:24px;bottom:24px;max-width:min(350px,calc(100vw - 30px));background:#252b28;color:#fff;border-radius:15px;padding:13px 15px;box-shadow:0 14px 40px rgba(0,0,0,.2);font-size:11px;line-height:1.45;opacity:0;transform:translateY(12px);pointer-events:none;transition:.25s;z-index:10}.toast.show{opacity:1;transform:none}.toast b{display:block;margin-bottom:2px}
+.ending{display:none}.ending.show{display:block}.ending h3{font:500 31px/1.12 Georgia,serif;margin:7px 0 11px}.ending p{font-size:13px;line-height:1.65;color:var(--muted)}.recap{display:grid;gap:8px;margin:17px 0}.recap div{padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:white;font-size:11px;line-height:1.45}.restart{margin-top:4px}
+@media(max-width:1040px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(5,minmax(105px,1fr))}.sidewrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}.side+.side{margin-top:0}}
+@media(max-width:780px){.app{padding:19px 14px}.hero{grid-template-columns:1fr;gap:19px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.choices,.sidewrap{grid-template-columns:1fr}.main{padding:17px}.head{display:block}.progress{margin-top:9px}.side+.side{margin-top:0}}
+@media(max-width:390px){.metrics{grid-template-columns:1fr}h1{font-size:45px}}
+@media(max-width:340px){h1{font-size:38px}.metrics{grid-template-columns:1fr}.choice b{font-size:12px}.choice span{font-size:10.5px}.scene h3{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="hero"><div><h1>Przepływ krytyczny</h1><p>Firma rośnie szybciej niż jej sposób pracy. Decydujesz, kto ma informacje, gdzie wchodzi automatyzacja i kiedy człowiek powinien przejąć kontrolę.</p></div><div class="brief"><b>5 dni</b><span>Każda decyzja coś ułatwia i coś kosztuje. Niektóre skutki wrócą dopiero później.</span></div></header>
+<section class="metrics">
+<div class="metric"><b id="vTrust">72</b><span>zaufanie zespołu</span><div class="bar"><i id="pTrust"></i></div></div>
+<div class="metric"><b id="vSpeed">58</b><span>przepustowość</span><div class="bar"><i id="pSpeed"></i></div></div>
+<div class="metric"><b id="vQuality">76</b><span>jakość decyzji</span><div class="bar"><i id="pQuality"></i></div></div>
+<div class="metric"><b id="vLoad">64</b><span>obciążenie ludzi</span><div class="bar"><i id="pLoad"></i></div></div>
+<div class="metric"><b id="vDebt">18</b><span>dług procesowy</span><div class="bar"><i id="pDebt"></i></div></div>
+</section>
+<div class="layout">
+<main class="panel main">
+<div class="head"><div><h2 id="chapter"></h2><p id="sub"></p></div><div class="progress" id="progress"></div></div>
+<div class="scene" id="scene"><div class="time" id="time"></div><h3 id="title"></h3><p id="text"></p></div>
+<div class="echo" id="echo"></div>
+<div class="choices" id="choices"></div>
+<div class="consequence" id="cons"><small>Co się zmieniło</small><p id="consText"></p></div>
+<div class="nextrow"><button class="primary" id="next" disabled>Dalej</button></div>
+<section class="ending" id="ending"><h3 id="endTitle"></h3><p id="endText"></p><div class="recap" id="recap"></div><button class="restart" id="restart">Zagraj inną strategią</button></section>
+</main>
+<div class="sidewrap">
+<aside class="panel side"><h2>Przepływ pracy</h2><p>Tak zmienia się droga informacji.</p><div class="flow" id="flow"></div></aside>
+<aside class="panel side"><h2>Historia</h2><div class="log" id="log"><div class="logitem">System działa tak, jak go zastałaś.</div></div></aside>
+</div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(()=>{
+const S=[
+{c:"Dzień 1. Wąskie gardło",sub:"Zespół pracuje. Tylko nic nie może ruszyć dalej.",time:"PONIEDZIAŁEK · 09:12",t:"Trzy osoby czekają na jedną decyzję Marty.",x:"Osoba od treści potrzebuje potwierdzenia od developera. QA czeka na priorytet. Klient pyta o termin. Marta zna kontekst wszystkich spraw, więc prawie każda decyzja wraca właśnie do niej.",a:[
+["Połącz treści bezpośrednio z developmentem","Drobne zmiany mogą być ustalane bez pośrednika.",{trust:3,speed:9,quality:3,load:-7,debt:-2,f:"direct"},"Drobne ustalenia omijają Martę. Zespół działa szybciej, a ona odzyskuje czas na decyzje, które naprawdę jej potrzebują."],
+["Ustal, kto może o czym decydować","Zespół wie, które decyzje może podjąć bez dodatkowej zgody.",{trust:5,speed:6,quality:7,load:-5,debt:-6,f:"owners"},"Część pytań w ogóle nie trafia do Marty. Odpowiedzialność przestaje być skupiona w jednej osobie."],
+["Zbierz wszystkie blokady na jednym statusie","Raz dziennie Marta rozstrzyga wszystko, co utknęło.",{trust:1,speed:2,quality:3,load:7,debt:5,f:"meeting"},"Łatwiej zobaczyć, co utknęło, ale każda trudniejsza sprawa nadal czeka na tę samą osobę."],
+["Na ten tydzień wszystko zatwierdza Marta","Dziś będzie szybciej, bo nie trzeba ustalać nowych zasad.",{trust:-2,speed:9,quality:6,load:12,debt:11,f:"central"},"Dzisiaj jest szybciej, bo nikt nie ustala nowych zasad. Zespół jeszcze mocniej przyzwyczaja się jednak, że bez Marty lepiej nie ruszać."]
+]},
+{c:"Dzień 2. Automatyzacja",sub:"43 zgłoszenia. Za mało ludzi. Automatyzacja może zdjąć kolejkę, ale nie każde zgłoszenie powinno przejść bez człowieka.",time:"WTOREK · 11:36",t:"43 zgłoszenia wpadają w dwie godziny.",x:"Większość jest rutynowa. Kilka dotyczy płatności, trzy wyglądają jak reklamacje, jedno pochodzi od kluczowego klienta. Ręczne sortowanie nie nadąża.",a:[
+["Oddaj wszystkie zgłoszenia AI","AI sortuje sprawy i od razu wysyła odpowiedź.",{trust:-5,speed:18,quality:-12,load:-14,debt:12,f:"fullauto"},"Kolejka niemal znika. Razem z nią znika moment, w którym człowiek mógł zauważyć reklamację, nietypową płatność albo ważnego klienta."],
+["Niech AI przygotowuje, a człowiek zatwierdza","AI przyspiesza przygotowanie odpowiedzi, ale niczego nie wysyła samo.",{trust:4,speed:7,quality:10,load:4,debt:0,f:"reviewall"},"Jest bezpieczniej, ale każda sprawa nadal zajmuje czyjąś uwagę. Kolejka maleje tylko częściowo."],
+["Rutynę oddaj AI, ryzyko człowiekowi","Pewne przypadki obsługuje AI. Reszta trafia do człowieka.",{trust:6,speed:14,quality:12,load:-8,debt:-4,f:"hitl"},"Proste sprawy znikają z kolejki. Ludzie zajmują się reklamacjami i przypadkami, w których pomyłka kosztowałaby najwięcej."],
+["Dołóż osobę do ręcznej obsługi","Więcej osób obsługuje tę samą kolejkę.",{trust:3,speed:7,quality:5,load:-9,debt:3,f:"hire"},"Kolejka maleje. Sposób pracy się jednak nie zmienia, więc kolejny skok ruchu może odtworzyć ten sam problem."]
+]},
+{c:"Dzień 3. Zielone KPI",sub:"Wynik wygląda świetnie. Klient ma inne zdanie.",time:"ŚRODA · 14:08",t:"96% zgłoszeń zamknięto w 10 minut. Jeden z klientów wraca trzeci raz z tym samym problemem.",x:"System liczy wysłaną odpowiedź jako sukces. Nie sprawdza, czy klient dostał rozwiązanie i czy musi wrócić z tą samą sprawą.",a:[
+["Mierz, czy klient musi wrócić","Za sukces uznaj sprawę, która nie wraca do kolejki.",{trust:6,speed:-2,quality:11,load:3,debt:-5,f:"outcome"},"Wynik na dashboardzie spada, ale zaczyna znaczyć coś więcej. Szybka odpowiedź przestaje być mylona z rozwiązanym problemem."],
+["Podnieś cel do 99% spraw w 10 minut","Jeszcze mocniej premiuj szybkość zamykania zgłoszeń.",{trust:-8,speed:9,quality:-11,load:12,debt:10,f:"goodhart"},"Tempo rośnie. Trudne sprawy coraz bardziej psują wynik, więc system zaczyna premiować ich zbyt szybkie zamykanie."],
+["Wyłącz wskaźnik i sprawdzaj sprawy ręcznie","Każdy przypadek dostaje pełną uwagę człowieka.",{trust:2,speed:-13,quality:7,load:16,debt:4,f:"manual"},"Łatwiej zauważyć niuanse, ale kolejka szybko rośnie. Ludzie płacą za dodatkowy kontekst własnym czasem."],
+["Dokładniej mierz czas pierwszej odpowiedzi","Popraw pomiar, nie zmieniając definicji sukcesu.",{trust:-3,speed:4,quality:-5,load:0,debt:7,f:"metrictrap"},"Liczba jest dokładniejsza, ale nadal odpowiada na pytanie „jak szybko?”, a nie „czy pomogliśmy?”."]
+]},
+{c:"Dzień 4. Nieobecność",sub:"Marty dziś nie ma. Nagle widać, ile rzeczy działało tylko dlatego, że była.",time:"CZWARTEK · 08:41",t:"Marty dziś nie będzie. Za godzinę startuje ważne wdrożenie.",x:"Nie ma czasu na przebudowę procesu. Część osób wie, co może zrobić samodzielnie. Reszta decyzji nadal istnieje głównie w głowie Marty.",a:[
+["Niech każdy decyduje w swoim obszarze","Do zastępstwa trafiają tylko sprawy, których nikt nie może rozstrzygnąć sam.",{trust:9,speed:8,quality:8,load:-4,debt:-7,f:"resilient"},"Większość pracy rusza bez Marty. Zastępstwo zajmuje się tylko wyjątkami zamiast przejmować cały dzień."],
+["Niech Kamil przejmie wszystkie decyzje Marty","Developer staje się tymczasowym centrum całego procesu.",{trust:-3,speed:2,quality:-6,load:19,debt:9,f:"replacehub"},"Wdrożenie rusza, ale wąskie gardło tylko zmienia imię. Kamil jednocześnie koduje, koordynuje i odpowiada klientowi."],
+["Wstrzymaj wdrożenie do powrotu Marty","Bez Marty nie podejmujesz decyzji o starcie.",{trust:-2,speed:-14,quality:8,load:-3,debt:3,f:"pause"},"Ryzyko błędnej decyzji spada. W zamian jedna nieobecność zatrzymuje pracę całego zespołu."],
+["Niech AI podpowiada na podstawie historii Marty","Model korzysta z wcześniejszych rozmów i decyzji.",{trust:-9,speed:12,quality:-14,load:-8,debt:15,f:"aiboss"},"AI szybko znajduje podobne sytuacje, ale nie wie, które dawne decyzje były wyjątkiem i dlaczego Marta je podjęła."]
+]},
+{c:"Dzień 5. Awaria",sub:"Piątek sprawdza wszystko, co zbudowałaś od poniedziałku.",time:"PIĄTEK · 15:22",t:"Integracja traci dane. Ważny klient czeka. W kolejce jest jeszcze 27 zgłoszeń.",x:"Do końca dnia zostało 90 minut. Część automatyzacji nadal działa, ale jedno z jej źródeł danych przestało odpowiadać. Możesz wykonać jeden ruch.",a:[
+["Oddaj człowiekowi tylko sprawy bez danych","Automatyzacja obsługuje to, czego nadal może być pewna.",{trust:9,speed:4,quality:13,load:8,debt:-8,f:"fallback"},"Zespół traci część szybkości, ale nie cały system. Niepewne sprawy trafiają do człowieka, a reszta nadal płynie."],
+["Wyłącz automatyzację i przejdź na tryb ręczny","Każda sprawa od tej chwili trafia do człowieka.",{trust:4,speed:-18,quality:9,load:20,debt:-2,f:"killall"},"Ludzie odzyskują pełną kontrolę nad decyzjami. Kolejka rośnie jednak szybciej, niż są w stanie ją obsłużyć."],
+["Zostaw wszystko bez zmian","Automatyzacja nadal działa tak, jakby źródło danych było kompletne.",{trust:-7,speed:7,quality:-13,load:-2,debt:12,f:"hope"},"Tempo prawie nie spada. Problem w tym, że część decyzji wygląda poprawnie mimo brakujących danych."],
+["Pozwól AI uzupełnić brakujące dane","Model wnioskuje brakujące informacje z wcześniejszych przypadków.",{trust:-6,speed:11,quality:-16,load:-5,debt:14,f:"infer"},"Kolejka przesuwa się szybko, ale system zaczyna zamieniać brak informacji w pewnie brzmiące odpowiedzi."]
+]}
+];
+let st={i:0,trust:72,speed:58,quality:76,load:64,debt:18,flags:[],decisions:[],selected:false};
+const $=x=>document.getElementById(x),cl=v=>Math.max(0,Math.min(100,v));
+function metric(){["Trust","Speed","Quality","Load","Debt"].forEach(([...a])=>{});for(const [A,k] of [["Trust","trust"],["Speed","speed"],["Quality","quality"],["Load","load"],["Debt","debt"]]){$("v"+A).textContent=Math.round(st[k]);$("p"+A).style.width=cl(st[k])+"%"}}
+function has(f){return st.flags.includes(f)}
+function flow(){let a=["Klient"];if(has("owners")||has("resilient"))a.push("Właściciel decyzji");else a.push("Marta");if(has("direct"))a.push("Treści ↔ development");if(has("hitl"))a.push("AI sortuje sprawy","Ryzyko → człowiek");else if(has("fullauto"))a.push("AI obsługuje wszystko");else if(has("reviewall"))a.push("AI przygotowuje → człowiek sprawdza");else a.push("Zespół");if(has("fallback"))a.push("Tryb awaryjny");a.push("Realizacja");$("flow").innerHTML=a.map((x,i)=>`<div class="flowstep ${i>1?"changed":""}"><div class="node">${i+1}</div><b>${x}</b></div>`).join("")}
+function log(t,k="good"){$("log").insertAdjacentHTML("afterbegin",`<div class="logitem ${k}">${t}</div>`)}
+function toast(title,text){$("toast").innerHTML=`<b>${title}</b>${text}`;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),3000)}
+function echo(){
+ let e="";
+ if(st.i===1&&(has("central")||has("meeting")))e="<b>Skutek poniedziałkowej decyzji:</b> Marta nadal pośredniczy w większości spraw. Skok ruchu uderza właśnie w ten punkt.";
+ if(st.i===3&&has("owners"))e="<b>Skutek poniedziałkowej decyzji:</b> rozpisani właściciele decyzji istnieją już przed nieobecnością Marty. Dzisiejszy kryzys zaczynasz z przewagą.";
+ if(st.i===4&&has("fullauto"))e="<b>Skutek wtorkowej decyzji:</b> pełny autopilot nie ma naturalnego punktu zatrzymania. Utrata źródła danych jest przez to groźniejsza.";
+ if(st.i===4&&has("hitl"))e="<b>Skutek wtorkowej decyzji:</b> masz już ścieżkę eskalacji do człowieka. Awaria nie zaczyna się od zera.";
+ $("echo").innerHTML=e;$("echo").classList.toggle("show",!!e);
+}
+function render(){let s=S[st.i];st.selected=false;$("chapter").textContent=s.c;$("sub").textContent=s.sub;$("progress").textContent=(st.i+1)+" / "+S.length;$("time").textContent=s.time;$("title").textContent=s.t;$("text").textContent=s.x;$("choices").innerHTML=s.a.map((a,i)=>`<button class="choice" data-i="${i}"><span class="letter">${String.fromCharCode(65+i)}</span><b>${a[0]}</b><span>${a[1]}</span></button>`).join("");[...$("choices").children].forEach(b=>b.onclick=()=>choose(+b.dataset.i));$("cons").classList.remove("show");$("next").disabled=true;$("next").textContent=st.i===S.length-1?"Zobacz raport":"Dalej";metric();flow();echo()}
+function choose(i){if(st.selected)return;st.selected=true;let a=S[st.i].a[i],d=a[2];for(const k of ["trust","speed","quality","load","debt"])st[k]=cl(st[k]+(d[k]||0));st.flags.push(d.f);st.decisions.push({day:st.i+1,label:a[0],flag:d.f});[...$("choices").children].forEach((b,j)=>{b.disabled=true;if(i===j)b.classList.add("selected")});let extra="";
+ if(st.i===3&&has("central")){st.speed=cl(st.speed-10);st.load=cl(st.load+10);st.debt=cl(st.debt+7);extra="  Poniedziałkowy skrót właśnie wrócił. Bez Marty część decyzji znów stoi, więc wcześniejsze przyspieszenie zamienia się w przeciążenie."} if(st.i===3&&has("owners")&&d.f==="resilient"){st.speed=cl(st.speed+5);st.debt=cl(st.debt-3);extra="  Poniedziałkowy podział odpowiedzialności działa dokładnie wtedy, gdy jest potrzebny: większość decyzji nie czeka na Martę."}
+ if(st.i===4&&has("hitl")&&d.f==="fallback"){st.quality=cl(st.quality+5);extra="  Wtorkowa zasada działa także podczas awarii: niepewne sprawy mają już drogę do człowieka."}
+ if(st.i===4&&has("fullauto")&&(d.f==="hope"||d.f==="infer")){st.quality=cl(st.quality-6);st.debt=cl(st.debt+5);extra="  Pełna automatyzacja z wtorku zwiększa koszt awarii, bo system nie ma przygotowanego miejsca na przejęcie niepewnych spraw."}
+ $("consText").textContent=a[3]+extra;$("cons").classList.add("show");$("next").disabled=false;let kind=(d.quality||0)<-8?"bad":(d.debt||0)>7?"warn":"good";log(`<b>${S[st.i].c}:</b> ${a[0]}`,kind);metric();flow();
+ const ach={hitl:["Człowiek w pętli","AI wie, kiedy ma oddać sprawę człowiekowi."],owners:["Decyzja ma adres","Zespół wie, kto może podjąć konkretną decyzję."],outcome:["Mierz rezultat","Wynik zaczął mierzyć rozwiązany problem, a nie samą aktywność."],resilient:["Bez centralnego bohatera","Nieobecność jednej osoby nie zatrzymała całego procesu."],fallback:["Kontrolowana awaria","Awaria jednego elementu nie wyłączyła całego procesu."]};if(ach[d.f])toast("Osiągnięcie: "+ach[d.f][0],ach[d.f][1])
+}
+function finish(){$("scene").style.display="none";$("echo").style.display="none";$("choices").style.display="none";$("cons").style.display="none";$("next").style.display="none";let score=(st.trust+st.speed+st.quality)-(st.load+st.debt),title,text;if(score>120){title="System wytrzymał kryzys.";text="Informacja nie utknęła w jednej osobie, a automatyzacja miała granice. Gdy pojawiła się awaria, zespół wiedział, co może działać dalej i co powinien przejąć człowiek."}else if(score>70){title="System działa, ale kryzys odsłonił jego słabe miejsca.";text="Część decyzji ułatwiła pracę, ale niektóre skróty wróciły jako przeciążenie, zależność od jednej osoby albo problemy z kontrolą automatyzacji."}else{title="Szybkość nie wystarczyła.";text="Przy spokojnym ruchu ten sposób pracy mógł wyglądać skutecznie. Kryzys pokazał, gdzie informacja się zatrzymuje i gdzie automatyzacja działa bez bezpiecznej drogi odwrotu."}$("endTitle").textContent=title;$("endText").textContent=text+" Liczy się nie ilość automatyzacji, tylko to, jak zachowuje się cały proces.";$("recap").innerHTML=st.decisions.map(d=>`<div><b>Dzień ${d.day}</b> · ${d.label}</div>`).join("")+`<div><b>Stan końcowy</b> · zaufanie ${Math.round(st.trust)}, przepustowość ${Math.round(st.speed)}, jakość ${Math.round(st.quality)}, obciążenie ${Math.round(st.load)}, dług ${Math.round(st.debt)}</div>`;$("ending").classList.add("show");$("chapter").textContent="Podsumowanie";$("sub").textContent="Piątkowa awaria tylko pokazała skutki decyzji z całego tygodnia."}
+$("next").onclick=()=>{if(!st.selected)return;if(st.i===S.length-1)return finish();st.i++;render()};
+$("restart").onclick=()=>{st={i:0,trust:72,speed:58,quality:76,load:64,debt:18,flags:[],decisions:[],selected:false};$("scene").style.display="block";$("echo").style.display="none";$("choices").style.display="grid";$("cons").style.display="none";$("next").style.display="block";$("ending").classList.remove("show");$("log").innerHTML='<div class="logitem">System działa tak, jak go zastałaś.</div>';render()};
+render();
+})();
+</script>
+</body>
+</html>
